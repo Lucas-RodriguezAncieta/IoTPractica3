@@ -25,69 +25,69 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-01 | Detección de objeto | Colocar un objeto frente al sensor IR. | El sensor detecta el objeto y obtiene `true`. | Por completar | No ejecutada | Por completar |
-| PF-02 | Ausencia de objeto | Retirar el objeto del rango del sensor. | El sensor obtiene `false`. | Por completar | No ejecutada | Por completar |
-| PF-03 | Cambios de detección | Acercar y retirar un objeto repetidamente. | El sensor refleja correctamente los cambios de presencia. | Por completar | No ejecutada | Por completar |
+| PF-01 | Detección de objeto | Colocar un objeto frente al sensor IR. | El sensor detecta el objeto y obtiene `true`. | El equipo confirmó detección con un objeto frente al sensor. | Aprobada | [Alexa con detección](../evidencias/04-alexa-sensor-con-deteccion.png) y [Shadow](../evidencias/07-shadow-sensor-detectado.png). |
+| PF-02 | Ausencia de objeto | Retirar el objeto del rango del sensor. | El sensor obtiene `false`. | El equipo confirmó ausencia de detección al retirar el objeto. | Aprobada | [Alexa sin detección](../evidencias/03-alexa-sensor-sin-deteccion.png). |
+| PF-03 | Cambios de detección | Acercar y retirar un objeto repetidamente. | El sensor refleja correctamente los cambios de presencia. | El equipo confirmó los cambios; el registro serial alternó entre detectado y no detectado. | Aprobada | Registro serial compartido; archivo de registro por guardar. |
 
 ### RF2 – Reporte periódico del estado en Device Shadow
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
 | PF-04 | Reporte de detección | Provocar una detección y consultar el Device Shadow. | `reported.objectDetected` contiene el estado actualizado. | Se observaron cambios de detección en el registro serial y en el Shadow; AWS aceptó los reportes. | Aprobada | Registro serial compartido y observación del Shadow; capturas por guardar. |
-| PF-05 | Reporte de orden | Abrir o cerrar la puerta y consultar el Shadow. | `reported.door` refleja la última orden aplicada. | Por completar | No ejecutada | Por completar |
-| PF-06 | Reporte de ángulo | Consultar `reported.servoAngle` después de una orden. | Se informa el ángulo solicitado por el firmware (0° o 180°). | Por completar | No ejecutada | Por completar |
+| PF-05 | Reporte de orden | Abrir o cerrar la puerta y consultar el Shadow. | `reported.door` refleja la última orden aplicada. | Se observaron los estados lógicos `closed` y `open`. | Aprobada | [Cerrado](../evidencias/05-shadow-cerrado.png) y [abierto](../evidencias/06-shadow-abierto.png). |
+| PF-06 | Reporte de ángulo | Consultar `reported.servoAngle` después de una orden. | Se informa el ángulo solicitado por el firmware (0° o 180°). | Se observaron 0° para `closed` y 180° para `open`; son posiciones solicitadas. | Aprobada | [Cerrado](../evidencias/05-shadow-cerrado.png) y [abierto](../evidencias/06-shadow-abierto.png). |
 | PF-07 | Reporte periódico | Mantener el ESP32 conectado y observar sus publicaciones durante al menos 60 segundos. | Se observan reportes periódicos de respaldo conforme al intervalo de 30 segundos. | Por completar | No ejecutada | Por completar |
 
 ### RF3 – Recepción de diferencias delta y aplicación de órdenes
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-08 | Recepción de delta de apertura | Modificar `desired.door` a `open` desde AWS IoT Core. | El ESP32 recibe el delta y solicita la apertura. | Por completar | No ejecutada | Por completar |
-| PF-09 | Recepción de delta de cierre | Modificar `desired.door` a `closed` desde AWS IoT Core. | El ESP32 recibe el delta y solicita el cierre. | Por completar | No ejecutada | Por completar |
-| PF-10 | Actualización de estado | Ejecutar una orden y consultar el Shadow después de su procesamiento. | El estado `reported` coincide con la última orden lógica aplicada. | Por completar | No ejecutada | Por completar |
+| PF-08 | Recepción de delta de apertura | Modificar `desired.door` a `open` desde AWS IoT Core. | El ESP32 recibe el delta y solicita la apertura. | El equipo informó la apertura y la sincronización del Shadow. | Aprobada | [Shadow abierto](../evidencias/06-shadow-abierto.png) y confirmación física del equipo. |
+| PF-09 | Recepción de delta de cierre | Modificar `desired.door` a `closed` desde AWS IoT Core. | El ESP32 recibe el delta y solicita el cierre. | El equipo informó el cierre y la sincronización del Shadow. | Aprobada | [Shadow cerrado](../evidencias/05-shadow-cerrado.png) y confirmación física del equipo. |
+| PF-10 | Actualización de estado | Ejecutar una orden y consultar el Shadow después de su procesamiento. | El estado `reported` coincide con la última orden lógica aplicada. | Se observaron `desired` y `reported` coincidentes en apertura y cierre. | Aprobada | [Cerrado](../evidencias/05-shadow-cerrado.png) y [abierto](../evidencias/06-shadow-abierto.png). |
 
 ### RF4 – Consulta de detección mediante Alexa
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-11 | Consulta con objeto detectado | Colocar un objeto frente al sensor y preguntar a Alexa por el sensor. | Alexa comunica la última detección disponible. | Por completar | No ejecutada | Por completar |
-| PF-12 | Consulta sin objeto detectado | Retirar el objeto y consultar nuevamente mediante Alexa. | Alexa comunica la ausencia de detección. | Por completar | No ejecutada | Por completar |
+| PF-11 | Consulta con objeto detectado | Colocar un objeto frente al sensor y preguntar a Alexa por el sensor. | Alexa comunica la última detección disponible. | Alexa informó detección. | Aprobada | [Captura Alexa](../evidencias/04-alexa-sensor-con-deteccion.png). |
+| PF-12 | Consulta sin objeto detectado | Retirar el objeto y consultar nuevamente mediante Alexa. | Alexa comunica la ausencia de detección. | Alexa informó ausencia de detección. | Aprobada | [Captura Alexa](../evidencias/03-alexa-sensor-sin-deteccion.png). |
 
 ### RF5 – Control de apertura y cierre mediante Alexa
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-13 | Apertura mediante Alexa | Solicitar verbalmente la apertura de la puerta. | La Skill actualiza `desired.door` a `open`. | Por completar | No ejecutada | Por completar |
-| PF-14 | Cierre mediante Alexa | Solicitar verbalmente el cierre de la puerta. | La Skill actualiza `desired.door` a `closed`. | Por completar | No ejecutada | Por completar |
-| PF-15 | Ejecución física de apertura | Solicitar la apertura y observar el servo SG90. | El servo realiza el movimiento de apertura solicitado. | Por completar | No ejecutada | Por completar |
-| PF-16 | Ejecución física de cierre | Solicitar el cierre y observar el servo SG90. | El servo realiza el movimiento de cierre solicitado. | Por completar | No ejecutada | Por completar |
+| PF-13 | Apertura mediante Alexa | Solicitar verbalmente la apertura de la puerta. | La Skill actualiza `desired.door` a `open`. | El equipo informó el comando y se observó `desired.door = open`. | Aprobada | [Shadow abierto](../evidencias/06-shadow-abierto.png) y observación del equipo. |
+| PF-14 | Cierre mediante Alexa | Solicitar verbalmente el cierre de la puerta. | La Skill actualiza `desired.door` a `closed`. | El equipo informó el comando y se observó `desired.door = closed`. | Aprobada | [Shadow cerrado](../evidencias/05-shadow-cerrado.png) y observación del equipo. |
+| PF-15 | Ejecución física de apertura | Solicitar la apertura y observar el servo SG90. | El servo realiza el movimiento de apertura solicitado. | El integrante responsable confirmó visualmente la apertura. | Aprobada | Observación del equipo; evidencia física por incorporar. |
+| PF-16 | Ejecución física de cierre | Solicitar el cierre y observar el servo SG90. | El servo realiza el movimiento de cierre solicitado. | El integrante responsable confirmó visualmente el cierre. | Aprobada | Observación del equipo; evidencia física por incorporar. |
 
 ### RF6 – Consulta de la última orden reportada
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-17 | Consulta después de abrir | Abrir la puerta y consultar su estado mediante Alexa. | Alexa informa la última orden reportada como `open`. | Por completar | No ejecutada | Por completar |
-| PF-18 | Consulta después de cerrar | Cerrar la puerta y consultar su estado mediante Alexa. | Alexa informa la última orden reportada como `closed`. | Por completar | No ejecutada | Por completar |
+| PF-17 | Consulta después de abrir | Abrir la puerta y consultar su estado mediante Alexa. | Alexa informa la última orden reportada como `open`. | El equipo informó que Alexa comunicó el estado reportado de apertura. | Aprobada | Observación del equipo; captura de respuesta por incorporar. |
+| PF-18 | Consulta después de cerrar | Cerrar la puerta y consultar su estado mediante Alexa. | Alexa informa la última orden reportada como `closed`. | El equipo informó que Alexa comunicó el estado reportado de cierre. | Aprobada | Observación del equipo; captura de respuesta por incorporar. |
 
 ### RF7 – Vinculación persistente entre usuario y Thing
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-19 | Vinculación de usuario | Ejecutar `VincularThingIntent` con el código correcto. | DynamoDB almacena el `userId` y el `thingName` asociado. | Por completar | No ejecutada | Por completar |
-| PF-20 | Persistencia del vínculo | Reiniciar la Lambda o realizar otra consulta con el mismo usuario. | Se conserva y recupera la asociación almacenada. | Por completar | No ejecutada | Por completar |
+| PF-19 | Vinculación de usuario | Ejecutar `VincularThingIntent` con el código correcto. | DynamoDB almacena el `userId` y el `thingName` asociado. | Se registró el vínculo con el Thing configurado. | Aprobada | [DynamoDB](../evidencias/08-dynamodb-vinculacion.png). |
+| PF-20 | Persistencia del vínculo | Reiniciar la Lambda o realizar otra consulta con el mismo usuario. | Se conserva y recupera la asociación almacenada. | El informe documenta consultas posteriores con el usuario vinculado. | Aprobada | [Informe, pruebas finales](../docs/informe.md#pruebas-finales-de-alexa-dynamodb-y-device-shadow--rf4-a-rf9). |
 
 ### RF8 – Resolución del vínculo mediante userId
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-21 | Resolución de vínculo existente | Ejecutar una consulta desde un usuario vinculado. | Lambda obtiene el `thingName` correspondiente al `userId`. | Por completar | No ejecutada | Por completar |
+| PF-21 | Resolución de vínculo existente | Ejecutar una consulta desde un usuario vinculado. | Lambda obtiene el `thingName` correspondiente al `userId`. | Se consultó el sensor desde el usuario vinculado. | Aprobada | [Vinculación](../evidencias/08-dynamodb-vinculacion.png) y [consulta de sensor](../evidencias/04-alexa-sensor-con-deteccion.png). |
 | PF-22 | Usuario sin vínculo | Ejecutar una consulta desde un usuario no vinculado. | Alexa informa que falta vincular un dispositivo y orienta al usuario. | Por completar | No ejecutada | Por completar |
 
 ### RF9 – Validación, cambio y eliminación del vínculo
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-23 | Desvinculación | Ejecutar `DesvincularThingIntent` y consultar DynamoDB. | Se elimina la asociación del usuario con el Thing. | Por completar | No ejecutada | Por completar |
+| PF-23 | Desvinculación | Ejecutar `DesvincularThingIntent` y consultar DynamoDB. | Se elimina la asociación del usuario con el Thing. | El equipo informó eliminación del vínculo y posterior nueva vinculación. | Aprobada | [Informe](../docs/informe.md#pruebas-finales-de-alexa-dynamodb-y-device-shadow--rf4-a-rf9); captura de eliminación por incorporar. |
 | PF-24 | Cambio de dispositivo | Ejecutar `CambiarThingIntent` para asociar un segundo Thing válido. | Se valida el nuevo Thing y se actualiza el vínculo del usuario. | Por completar | No ejecutada | Por completar |
 
 ## 4. Pruebas de requisitos no funcionales
@@ -99,15 +99,15 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 | PNF-01 | Conectividad | Conexión Wi-Fi | Encender el ESP32 y revisar el monitor serial. | El ESP32 se conecta correctamente a la red Wi-Fi. | Conexión indicada por `Estado WiFi: 3` a los 1791 ms desde el arranque. | Aprobada | Registro serial compartido; archivo de registro por guardar. |
 | PNF-02 | Conectividad | Conexión MQTT/TLS | Iniciar la comunicación con AWS IoT Core y revisar los mensajes seriales. | Se establece la conexión MQTT segura mediante TLS. | `MQTT conectado` a los 13163 ms desde el arranque; después se sincronizó el Shadow. | Aprobada | Registro serial compartido; archivo de registro por guardar. |
 | PNF-03 | Comunicación | Publicación de detección | Cambiar el estado del sensor IR y revisar el Shadow. | AWS recibe y refleja los reportes del sensor. | El registro alternó entre detectado y no detectado; AWS aceptó los reportes y se observaron los cambios en el Shadow. | Aprobada | Registro serial compartido y observación del Shadow; capturas por guardar. |
-| PNF-04 | Comunicación | Sincronización del Shadow | Cambiar el estado deseado desde AWS y observar el estado reportado. | El dispositivo procesa la diferencia y actualiza `reported`. | Por completar | No ejecutada | Por completar |
+| PNF-04 | Comunicación | Sincronización del Shadow | Cambiar el estado deseado desde AWS y observar el estado reportado. | El dispositivo procesa la diferencia y actualiza `reported`. | Se observaron estados deseados y reportados coincidentes en apertura y cierre. | Aprobada | [Cerrado](../evidencias/05-shadow-cerrado.png) y [abierto](../evidencias/06-shadow-abierto.png). |
 
 ### Recuperación y reconexión
 
 | ID | Criterio | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|---|
-| PNF-05 | Recuperación | Pérdida de Wi-Fi | Desconectar temporalmente la red Wi-Fi del ESP32. | El firmware detecta la desconexión e intenta recuperarla. | Por completar | No ejecutada | Por completar |
-| PNF-06 | Recuperación | Recuperación de MQTT | Restablecer Wi-Fi y observar el monitor serial. | El ESP32 restablece la comunicación MQTT con AWS. | Por completar | No ejecutada | Por completar |
-| PNF-07 | Recuperación | Recuperación de orden pendiente | Desconectar el ESP32, publicar `desired.door = closed` y reconectarlo. | El ESP32 recupera la orden pendiente desde el Shadow y la procesa. | Por completar | No ejecutada | Por completar |
+| PNF-05 | Recuperación | Pérdida de Wi-Fi | Desconectar temporalmente la red Wi-Fi del ESP32. | El firmware detecta la desconexión e intenta recuperarla. | El equipo informó un corte temporal y posterior recuperación. | Aprobada | [Informe: recuperación](../docs/informe.md#recuperación-de-una-orden-pendiente-tras-desconexión); registro por incorporar. |
+| PNF-06 | Recuperación | Recuperación de MQTT | Restablecer Wi-Fi y observar el monitor serial. | El ESP32 restablece la comunicación MQTT con AWS. | El equipo informó que el ESP32 recuperó la comunicación después del corte. | Aprobada | [Informe: recuperación](../docs/informe.md#recuperación-de-una-orden-pendiente-tras-desconexión); registro por incorporar. |
+| PNF-07 | Recuperación | Recuperación de orden pendiente | Desconectar el ESP32, publicar `desired.door = closed` y reconectarlo. | El ESP32 recupera la orden pendiente desde el Shadow y la procesa. | Según el equipo, tras reconectar recuperó `closed` y el servo cerró. | Aprobada | [Informe: recuperación](../docs/informe.md#recuperación-de-una-orden-pendiente-tras-desconexión); registro por incorporar. |
 
 ### Estabilidad
 
