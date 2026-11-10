@@ -1,0 +1,43 @@
+Pruebas funcionales
+ID	Requisito	Prueba	Procedimiento de ejecución	Resultado esperado
+PF-01	RF1	Detección de objeto	Colocar un objeto frente al sensor IR.	El sensor detecta el objeto y obtiene true.
+PF-02	RF1	Ausencia de objeto	Retirar el objeto del rango del sensor.	El sensor obtiene false.
+PF-03	RF1	Cambios de detección	Acercar y retirar un objeto repetidamente.	El sensor refleja correctamente los cambios de presencia.
+PF-04	RF2	Reporte de detección	Provocar una detección y consultar el Device Shadow.	reported.objectDetected contiene el estado actualizado.
+PF-05	RF2	Reporte de orden	Abrir o cerrar la puerta y consultar el Shadow.	reported.door refleja la última orden aplicada.
+PF-06	RF2	Reporte de ángulo	Consultar reported.servoAngle después de una orden.	Se informa el ángulo solicitado por el firmware (0° o 180°).
+PF-07	RF2	Reporte periódico	Mantener el ESP32 conectado y observar sus publicaciones durante al menos 60 segundos.	Se observan reportes periódicos de respaldo conforme al intervalo de 30 segundos.
+PF-08	RF3	Recepción de delta de apertura	Modificar desired.door a open desde AWS IoT Core.	El ESP32 recibe el delta y solicita la apertura.
+PF-09	RF3	Recepción de delta de cierre	Modificar desired.door a closed desde AWS IoT Core.	El ESP32 recibe el delta y solicita el cierre.
+PF-10	RF3	Actualización de estado	Ejecutar una orden y consultar el Shadow después de su procesamiento.	El estado reported coincide con la última orden lógica aplicada.
+PF-11	RF4	Consulta con objeto detectado	Colocar un objeto frente al sensor y preguntar a Alexa por el sensor.	Alexa comunica la última detección disponible.
+PF-12	RF4	Consulta sin objeto detectado	Retirar el objeto y consultar nuevamente mediante Alexa.	Alexa comunica la ausencia de detección.
+PF-13	RF5	Apertura mediante Alexa	Solicitar verbalmente la apertura de la puerta.	La Skill actualiza desired.door a open.
+PF-14	RF5	Cierre mediante Alexa	Solicitar verbalmente el cierre de la puerta.	La Skill actualiza desired.door a closed.
+PF-15	RF5	Ejecución física de apertura	Solicitar la apertura y observar el servo SG90.	El servo realiza el movimiento de apertura solicitado.
+PF-16	RF5	Ejecución física de cierre	Solicitar el cierre y observar el servo SG90.	El servo realiza el movimiento de cierre solicitado.
+PF-17	RF6	Consulta después de abrir	Abrir la puerta y consultar su estado mediante Alexa.	Alexa informa la última orden reportada como open.
+PF-18	RF6	Consulta después de cerrar	Cerrar la puerta y consultar su estado mediante Alexa.	Alexa informa la última orden reportada como closed.
+PF-19	RF7	Vinculación de usuario	Ejecutar VincularThingIntent con el código correcto.	DynamoDB almacena el userId y el thingName asociado.
+PF-20	RF7	Persistencia del vínculo	Reiniciar la Lambda o realizar otra consulta con el mismo usuario.	Se conserva y recupera la asociación almacenada.
+PF-21	RF8	Resolución de vínculo existente	Ejecutar una consulta desde un usuario vinculado.	Lambda obtiene el thingName correspondiente al userId.
+PF-22	RF8	Usuario sin vínculo	Ejecutar una consulta desde un usuario no vinculado.	Alexa informa que falta vincular un dispositivo y orienta al usuario.
+PF-23	RF9	Desvinculación	Ejecutar DesvincularThingIntent y consultar DynamoDB.	Se elimina la asociación del usuario con el Thing.
+PF-24	RF9	Cambio de dispositivo	Ejecutar CambiarThingIntent para asociar un segundo Thing válido.	Se valida el nuevo Thing y se actualiza el vínculo del usuario.
+
+2. Pruebas no funcionales
+ID	Criterio	Prueba	Procedimiento de ejecución	Resultado esperado
+PNF-01	Comunicación ESP32–AWS	Conexión Wi-Fi	Encender el ESP32 y revisar el monitor serial.	El ESP32 se conecta correctamente a la red Wi-Fi.
+PNF-02	Comunicación ESP32–AWS	Conexión MQTT/TLS	Iniciar la comunicación con AWS IoT Core y revisar los mensajes seriales.	Se establece la conexión MQTT segura mediante TLS.
+PNF-03	Comunicación ESP32–AWS	Publicación de detección	Cambiar el estado del sensor IR y revisar el Shadow.	AWS recibe y refleja los reportes del sensor.
+PNF-04	Comunicación ESP32–AWS	Sincronización del Shadow	Cambiar el estado deseado desde AWS y observar el estado reportado.	El dispositivo procesa la diferencia y actualiza reported.
+PNF-05	Reconexión	Pérdida de Wi-Fi	Desconectar temporalmente la red Wi-Fi del ESP32.	El firmware detecta la desconexión e intenta recuperarla.
+PNF-06	Reconexión	Recuperación de MQTT	Restablecer Wi-Fi y observar el monitor serial.	El ESP32 restablece la comunicación MQTT con AWS.
+PNF-07	Reconexión	Recuperación de orden pendiente	Desconectar el ESP32, publicar desired.door = closed y reconectarlo.	El ESP32 recupera la orden pendiente desde el Shadow y la procesa.
+PNF-08	Estabilidad	Observación continua	Mantener el prototipo conectado durante 10 minutos y registrar eventos.	El sistema permanece operativo durante el periodo observado.
+PNF-09	Estabilidad	Ciclos de apertura y cierre	Ejecutar 10 ciclos consecutivos de apertura y cierre.	Se procesan los ciclos sin bloqueos ni reinicios inesperados.
+PNF-10	Respuesta de Alexa	Tiempo de respuesta de la Skill	Registrar el instante de solicitud y el instante de respuesta de Alexa.	Se obtiene un tiempo de respuesta medible.
+PNF-11	Latencia	Tiempo Alexa–Shadow	Registrar el instante de solicitud y el de actualización del Shadow.	Se obtiene la latencia de actualización del Shadow.
+PNF-12	Latencia	Tiempo Shadow–ESP32	Registrar la publicación del cambio deseado y su recepción en el ESP32.	Se obtiene el tiempo de recepción de la orden.
+PNF-13	Precisión	Comparación de detecciones IR	Realizar 20 pruebas con objeto presente y ausente, registrando cada lectura.	Se identifican aciertos, falsos positivos y falsos negativos.
+PNF-14	Consumo	Medición de alimentación	Medir tensión y corriente durante reposo y movimiento del servo.	Se registran valores eléctricos y se comprueba que no existan caídas que provoquen reinicios.
