@@ -387,48 +387,6 @@ La configuración de la placa se basa en:
 
 La configuración debe verificarse con la placa física utilizada durante la práctica.
 
-## 3.2. Organización del repositorio
-
-El proyecto utiliza una estructura modular para separar el firmware, las configuraciones, las funciones de backend y la documentación.
-
-La estructura general prevista es:
-
-```text
-IoTPractica3/
-│
-├── platformio.ini
-│
-├── src/
-│   └── Código principal del firmware
-│
-├── include/
-│   ├── config.example.h
-│   └── secrets.example.h
-│
-├── lib/
-│   └── Librerías y módulos auxiliares
-│
-├── lambda/
-│   └── Código de la función AWS Lambda
-│
-├── alexa/
-│   └── Modelo de interacción de la skill
-│
-├── aws/
-│   ├── iot-policy.example.json
-│   └── Configuraciones de AWS
-│
-├── docs/
-│   └── Documentación técnica
-│
-├── evidencias/
-│   └── Fotografías, capturas y resultados
-│
-└── README.md
-```
-
-La estructura refleja la organización prevista del proyecto. Los archivos y módulos deben mantenerse sincronizados con el contenido real del repositorio.
-
 ## 3.3. Configuración del ESP32
 
 El ESP32 es el componente principal del objeto inteligente. Se encarga de inicializar los periféricos, conectarse a la red inalámbrica, establecer la comunicación con AWS IoT Core y procesar los cambios recibidos mediante el Shadow.
@@ -614,33 +572,7 @@ Para verificar el Shadow se pueden realizar las siguientes operaciones:
 
 Una respuesta aceptada de AWS no debe interpretarse como confirmación de movimiento físico del servomotor.
 
-## 3.9. Monitor serial
-
-El monitor serial permite observar el comportamiento del firmware durante la ejecución.
-
-Se configura a:
-
-```text
-115200 baudios
-```
-
-La información de diagnóstico debe permitir identificar:
-
-- Inicialización del ESP32.
-- Inicialización del sensor.
-- Estado de disponibilidad del servomotor.
-- Conexión Wi-Fi.
-- Conexión MQTT.
-- Suscripciones a los tópicos.
-- Consultas al Shadow.
-- Respuestas recibidas.
-- Órdenes de apertura y cierre.
-- Actualizaciones del estado reportado.
-- Errores de conexión o comunicación.
-
-Los registros no deben imprimir contraseñas, certificados ni claves privadas.
-
-## 3.10. Desarrollo de AWS Lambda
+## 3.9. Desarrollo de AWS Lambda
 
 La función AWS Lambda está contemplada como backend de la skill de Alexa.
 
@@ -670,7 +602,7 @@ La función debe contemplar situaciones como:
 
 **Estado actual:** la implementación y validación de esta función se encuentran pendientes. Por tanto, no se afirma que las operaciones anteriores ya estén funcionando.
 
-## 3.11. Desarrollo de Amazon DynamoDB
+## 3.10. Desarrollo de Amazon DynamoDB
 
 DynamoDB se propone como almacenamiento persistente para registrar la asociación entre usuarios y dispositivos.
 
