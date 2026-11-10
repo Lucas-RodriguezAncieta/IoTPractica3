@@ -135,7 +135,7 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 - **RF1:** se verifica que el sensor IR identifique correctamente la presencia y ausencia de objetos.
 - **RF2:** se comprueba que el Shadow refleje la detección, la última orden aplicada y el ángulo solicitado, además de los reportes periódicos.
 - **RF3:** se verifica la recepción de diferencias `delta` y la actualización del estado reportado.
-- **RF4:** se comprueba que Alexa responda en español con la última detección disponible.
+- **RF4:** se comprueba que Alexa responda en español conla última detección disponible.
 - **RF5:** se comprueba que las órdenes de apertura y cierre lleguen mediante `desired.door` y se ejecuten en el prototipo.
 - **RF6:** se verifica que Alexa informe la última orden lógica reportada, sin presentarla como una medición física.
 - **RF7:** se comprueba que la vinculación entre usuario y Thing permanezca almacenada.
@@ -146,6 +146,3 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 - **Estabilidad:** se debe conservar un registro de los 10 minutos y de los ciclos realizados.
 - **Latencia, precisión y consumo:** deben registrarse valores medidos; no se deben sustituir por estimaciones.
 
-## 7. Consideraciones de seguridad
-
-1. Realizar las
