@@ -36,3 +36,7 @@ credentials
 *.p7c
 *private-key*
 *private_key*
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
