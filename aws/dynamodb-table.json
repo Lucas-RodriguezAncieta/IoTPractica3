@@ -1,0 +1,20 @@
+
+{
+  "TableName": "puerta_mascotas_usuarios",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "userId",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "userId",
+      "KeyType": "HASH"
+    }
+  ],
+  "BillingModeSummary": {
+    "BillingMode": "PAY_PER_REQUEST",
+    "LastUpdateToPayPerRequestDateTime": "2026-11-09T18:42:34.611000+00:00"
+  }
+}
