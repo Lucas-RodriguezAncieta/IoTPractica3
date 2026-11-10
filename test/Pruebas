@@ -130,23 +130,7 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 | PNF-13 | Precisión | Comparación de detecciones IR | Realizar 20 pruebas con objeto presente y ausente, registrando cada lectura. | Se identifican aciertos, falsos positivos y falsos negativos. | Por completar | No ejecutada | Por completar |
 | PNF-14 | Consumo | Medición de alimentación | Medir tensión y corriente durante reposo y movimiento del servo. | Se registran valores eléctricos y se comprueba que no existan caídas que provoquen reinicios. | Por completar | No ejecutada | Por completar |
 
-## 5. Registro detallado de ejecución
-
-Para cada prueba ejecutada se recomienda conservar la siguiente información:
-
-| Campo | Descripción |
-|---|---|
-| Identificador | Código de la prueba, por ejemplo PF-01. |
-| Fecha y hora | Momento de ejecución de la prueba. |
-| Responsable | Persona que realizó la prueba. |
-| Firmware | Versión del firmware utilizado. |
-| Condiciones | Estado de la red, alimentación y prototipo. |
-| Resultado obtenido | Descripción de lo que ocurrió realmente. |
-| Estado | Aprobada, fallida, no ejecutada o no aplica. |
-| Evidencia | Captura, fotografía, registro serial o versión del Shadow. |
-| Observaciones | Errores, diferencias o circunstancias particulares. |
-
-## 6. Criterios para determinar el cumplimiento
+## 5. Criterios para determinar el cumplimiento
 
 - **RF1:** se verifica que el sensor IR identifique correctamente la presencia y ausencia de objetos.
 - **RF2:** se comprueba que el Shadow refleje la detección, la última orden aplicada y el ángulo solicitado, además de los reportes periódicos.
