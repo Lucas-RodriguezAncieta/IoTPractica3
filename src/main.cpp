@@ -4,8 +4,8 @@
 #include "ShadowManager.h"
 
 namespace {
-SensorIR sensor(27, LOW);
-ControlServo puerta(18);
+SensorIR sensor(18, LOW);
+ControlServo puerta(27);
 ShadowManager shadow(sensor, puerta);
 }
 
