@@ -32,7 +32,7 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 
 | ID | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|
-| PF-04 | Reporte de detección | Provocar una detección y consultar el Device Shadow. | `reported.objectDetected` contiene el estado actualizado. | Por completar | No ejecutada | Por completar |
+| PF-04 | Reporte de detección | Provocar una detección y consultar el Device Shadow. | `reported.objectDetected` contiene el estado actualizado. | Se observaron cambios de detección en el registro serial y en el Shadow; AWS aceptó los reportes. | Aprobada | Registro serial compartido y observación del Shadow; capturas por guardar. |
 | PF-05 | Reporte de orden | Abrir o cerrar la puerta y consultar el Shadow. | `reported.door` refleja la última orden aplicada. | Por completar | No ejecutada | Por completar |
 | PF-06 | Reporte de ángulo | Consultar `reported.servoAngle` después de una orden. | Se informa el ángulo solicitado por el firmware (0° o 180°). | Por completar | No ejecutada | Por completar |
 | PF-07 | Reporte periódico | Mantener el ESP32 conectado y observar sus publicaciones durante al menos 60 segundos. | Se observan reportes periódicos de respaldo conforme al intervalo de 30 segundos. | Por completar | No ejecutada | Por completar |
@@ -95,9 +95,9 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 
 | ID | Criterio | Prueba | Procedimiento de ejecución | Resultado esperado | Resultado obtenido | Estado | Evidencia |
 |---|---|---|---|---|---|---|---|
-| PNF-01 | Conectividad | Conexión Wi-Fi | Encender el ESP32 y revisar el monitor serial. | El ESP32 se conecta correctamente a la red Wi-Fi. | Por completar | No ejecutada | Por completar |
-| PNF-02 | Conectividad | Conexión MQTT/TLS | Iniciar la comunicación con AWS IoT Core y revisar los mensajes seriales. | Se establece la conexión MQTT segura mediante TLS. | Por completar | No ejecutada | Por completar |
-| PNF-03 | Comunicación | Publicación de detección | Cambiar el estado del sensor IR y revisar el Shadow. | AWS recibe y refleja los reportes del sensor. | Por completar | No ejecutada | Por completar |
+| PNF-01 | Conectividad | Conexión Wi-Fi | Encender el ESP32 y revisar el monitor serial. | El ESP32 se conecta correctamente a la red Wi-Fi. | Conexión indicada por `Estado WiFi: 3` a los 1791 ms desde el arranque. | Aprobada | Registro serial compartido; archivo de registro por guardar. |
+| PNF-02 | Conectividad | Conexión MQTT/TLS | Iniciar la comunicación con AWS IoT Core y revisar los mensajes seriales. | Se establece la conexión MQTT segura mediante TLS. | `MQTT conectado` a los 13163 ms desde el arranque; después se sincronizó el Shadow. | Aprobada | Registro serial compartido; archivo de registro por guardar. |
+| PNF-03 | Comunicación | Publicación de detección | Cambiar el estado del sensor IR y revisar el Shadow. | AWS recibe y refleja los reportes del sensor. | El registro alternó entre detectado y no detectado; AWS aceptó los reportes y se observaron los cambios en el Shadow. | Aprobada | Registro serial compartido y observación del Shadow; capturas por guardar. |
 | PNF-04 | Comunicación | Sincronización del Shadow | Cambiar el estado deseado desde AWS y observar el estado reportado. | El dispositivo procesa la diferencia y actualiza `reported`. | Por completar | No ejecutada | Por completar |
 
 ### Recuperación y reconexión
@@ -145,4 +145,3 @@ Las pruebas permiten comprobar el funcionamiento del sensor infrarrojo, la comun
 - **Recuperación:** debe comprobarse la recuperación de órdenes pendientes, no solamente la reconexión Wi-Fi.
 - **Estabilidad:** se debe conservar un registro de los 10 minutos y de los ciclos realizados.
 - **Latencia, precisión y consumo:** deben registrarse valores medidos; no se deben sustituir por estimaciones.
-
