@@ -1,18 +1,25 @@
 # Informe técnico: Puerta Inteligente para Mascotas
 
-Documento inicial; las secciones pendientes se completarán durante el desarrollo y con evidencias reales. La referencia principal es [Práctica_3.md](../Práctica_3.md).
+- **Práctica 3 — Documento de integración y validación**
+- **Actualización:** 10 de noviembre de 2026
+- **Repositorio:** [IoTPractica3](../README.md)
+**Consigna:** [Práctica_3.md](../Práctica_3.md)
+
+Este informe integra el diseño original, la implementación del firmware ESP32 y las pruebas posteriores con AWS IoT Core, Amazon DynamoDB, AWS Lambda y la Skill personalizada de Alexa. Se distinguen los resultados observados, las confirmaciones manuales del equipo y las verificaciones pendientes. Las secciones históricas de diagnóstico del firmware se conservan para documentar la evolución del proyecto.
+
+**Estado general:** se comprobaron el intercambio de órdenes de apertura/cierre, la sincronización de Device Shadow y la consulta del sensor IR; el integrante encargado del hardware confirmó el movimiento físico del SG90. No se afirma seguridad para el uso autónomo con animales, precisión del ángulo ni métricas de latencia no medidas.
 
 ## 1. Caso de Uso y Requerimientos
 
 ### Caso de uso y justificación del sensor y actuador
 
-La Puerta Inteligente para Mascotas está concebida para regular un paso para mascotas y permitir consultar si hay un objeto presente frente a él. Un sensor infrarrojo digital se eligió para proporcionar una señal binaria de detección dentro de su alcance; no identifica exclusivamente mascotas. Un servomotor posicional permite solicitar apertura a 180° y cierre a 0°. La detección no ordena movimientos. El control definitivo previsto pasa por Alexa, Lambda y Device Shadow; esas integraciones aún están pendientes.
+La Puerta Inteligente para Mascotas está concebida para regular un paso para mascotas y permitir consultar si hay un objeto presente frente a él. Un sensor infrarrojo digital se eligió para proporcionar una señal binaria de detección dentro de su alcance; no identifica exclusivamente mascotas. Un servomotor posicional permite solicitar apertura a 180° y cierre a 0°. La detección no ordena movimientos. El control por Alexa, AWS Lambda y Device Shadow fue integrado y probado durante la fase final.
 
-El IR no garantiza que el paso esté libre ni constituye protección antiatrapamiento. No se prevén cierres automáticos por detección, ausencia o temporizador. El mecanismo debe ser ligero, de baja tensión y diseñado para evitar fuerza peligrosa; no se ha verificado y no debe usarse con animales. El servo no se adjunta al arrancar y el movimiento está deshabilitado por defecto. Al habilitarlo expresamente, una orden persistida puede producir movimiento en la conexión o reconexión; utilizar exclusivamente con el mecanismo desacoplado y sin mascotas.
+El IR no garantiza que el paso esté libre ni constituye protección antiatrapamiento. No se prevén cierres automáticos por detección, ausencia o temporizador. El mecanismo debe ser ligero, de baja tensión y diseñado para evitar fuerza peligrosa; no se ha verificado y no debe usarse con animales. La plantilla del firmware mantiene el movimiento deshabilitado por defecto. Para las pruebas finales se habilitó deliberadamente `ENABLE_DOOR_MOVEMENT = true` y se cargó el firmware al ESP32. Una orden persistida puede producir movimiento en la conexión o reconexión; las pruebas deben realizarse con la zona despejada, sin mascotas y, de preferencia, con el mecanismo desacoplado.
 
 ### Requerimientos funcionales
 
-Los siguientes requisitos son objetivos del sistema; las clases locales de lectura y control se han validado funcionalmente según confirmación del usuario, mientras que las integraciones de nube siguen pendientes:
+Los siguientes requisitos definen el alcance de la práctica. Se comprobó el funcionamiento de la mayor parte mediante pruebas de consola, Device Shadow y observación del prototipo; la sustitución por un segundo Thing y algunas validaciones exhaustivas siguen pendientes:
 
 | Requisito | Aplicación a la puerta para mascotas |
 |---|---|
@@ -28,13 +35,22 @@ Los siguientes requisitos son objetivos del sistema; las clases locales de lectu
 
 ### Requerimientos no funcionales
 
-Pendiente de declarar valores medibles y su justificación: estabilidad, exactitud de detección frente a una referencia, tiempo de respuesta, frecuencia de reporte y reconexión con sincronización del estado deseado.
+Se adoptaron como criterios de observación la conectividad MQTT/TLS, publicación de lecturas y cambios de estado, recuperación de órdenes pendientes y respuesta de Alexa. El firmware documenta una lectura de IR aproximadamente cada **200 ms**, una separación mínima de **1 s** entre publicaciones y un reporte de respaldo cada **30 s**; estos son parámetros implementados, no mediciones de latencia de extremo a extremo.
+
+| Criterio | Evidencia disponible | Estado |
+|---|---|---|
+| Comunicación ESP32–AWS | Shadow sincronizado y reportes de IR | Comprobación funcional |
+| Apertura/cierre desde Alexa | Respuestas de la Skill y confirmación física del SG90 | Comprobación funcional |
+| Detección IR | Lecturas `true` y `false` en Shadow y Alexa | Comprobación funcional |
+| Reconexión | Caso manual de recuperación de orden reportado en fase 4 | Caso específico comprobado; no prueba exhaustiva |
+| Estabilidad | Observación de 10 minutos consignada en fase 4 | Sin registro íntegro para certificar continuidad total |
+| Latencia, precisión y consumo | No se proporcionaron series de medición | Pendientes de cuantificación |
 
 ## 2. Análisis y Diseño
 
 ### Diagrama de arquitectura
 
-**Estado:** la Fase 4 está funcionalmente validada según las pruebas manuales informadas por el usuario, incluida la recuperación de una orden pendiente tras desconexión. El usuario confirmó comunicación ESP32–AWS y aceptación de reportes del IR durante diez minutos; el fragmento serial no muestra errores ni reinicios, pero falta el registro íntegro para demostrar ausencia de desconexiones durante todo el intervalo. Anteriormente observó errores `-4` y reconexiones. Esta validación no acredita seguridad para operación desatendida. Lambda y Alexa siguen sin implementar.
+La arquitectura de la fase final está integrada: Alexa recibe frases en español, AWS Lambda procesa intents, DynamoDB conserva el vínculo `userId`/`thingName`, IoT Core gestiona el Device Shadow y el ESP32 intercambia mensajes MQTT/TLS con AWS. El sensor IR informa lecturas, mientras el servomotor ejecuta órdenes de control. Las pruebas no acreditan un mecanismo de protección antiatrapamiento.
 
 ```mermaid
 flowchart LR
@@ -53,36 +69,28 @@ flowchart LR
   E -->|señal de posición| SV["Servomotor de puerta para mascotas"]
 ```
 
-El usuario interactúa con la skill; Lambda resuelve su vínculo en DynamoDB, valida Things en IoT Core y consulta o actualiza su Shadow. El ESP32 usará MQTT sobre TLS para recibir diferencias y publicar lecturas y órdenes aplicadas. El IR aporta presencia y el servo mueve la puerta. Alexa no se comunica directamente con el ESP32; cada usuario se resuelve a su propio Thing.
+El usuario interactúa con la skill; Lambda resuelve su vínculo en DynamoDB y consulta o actualiza el Shadow del Thing asociado. El ESP32 utiliza MQTT sobre TLS para recibir diferencias y publicar lecturas y estados de órdenes. El IR aporta presencia y el servo mueve la puerta. Alexa no se comunica directamente con el ESP32; el vínculo de cada usuario se consulta de forma persistente en DynamoDB.
 
 ### Diagrama de circuito
 
-Conexiones propuestas, sujetas a la comprobación de los componentes reales:
+El equipo proporcionó un esquema funcional de la alimentación USB, el ESP32 DOIT DevKit V1, el sensor IR digital y el SG90. La imagen se incorpora en las evidencias:
 
-```mermaid
-flowchart LR
-  USB["Alimentación USB"]
-  ESP["ESP32"]
-  IR["Sensor IR digital"]
-  Servo["Servomotor"]
-  USB -- "USB" --> ESP
-  IR -- "OUT → GPIO 27" --> ESP
-  ESP -- "3.3 V → VCC" --> IR
-  ESP -- "GND común" --- IR
-  ESP -- "GPIO 18 → señal" --> Servo
-  ESP -- "5V/VIN → VCC" --> Servo
-  ESP -- "GND común" --- Servo
-```
+![Esquema funcional de conexiones](../evidencias/11-diagrama-conexiones.png)
 
-El sistema recibe alimentación únicamente por USB al ESP32 DOIT DevKit V1; el sensor recibe 3.3 V de la placa y el servo se conecta a su pin 5V/VIN, con tierra común. Esta configuración cumple el requisito de una sola fuente. Debe confirmarse que la placa física suministra la tensión USB en ese pin, que el módulo IR admite 3.3 V y que su salida hacia GPIO 27 respeta los niveles del ESP32.
+**Esquema de conexiones actualizado:** el equipo confirmó que la imagen entregada es la versión vigente del circuito: **IR OUT → GPIO18** y **señal del SG90 → GPIO27**. La descripción de pines del informe anterior corresponde a una versión desactualizada. Antes de dar por coincidente el código entregado, se debe revisar que `src/main.cpp` o su configuración de pines también usen estas asignaciones. La tabla documenta el esquema final proporcionado:
 
-El consumo y los picos de corriente del servomotor podrían provocar caídas de tensión, reinicios o inestabilidad eléctrica. Se deben validar experimentalmente la capacidad de la alimentación USB y el funcionamiento del conjunto, con el mecanismo desacoplado y sin mascotas; no se han aportado resultados para esta configuración. El diagrama representa conexiones lógicas y no sustituye al esquema eléctrico definitivo.
+| Componente | Conexión del esquema actualizado | Alimentación |
+|---|---|---|
+| Sensor IR digital | OUT a GPIO18 | VCC a 3.3 V, GND común |
+| SG90 | Señal a GPIO27 | VCC a 5V/VIN, GND común |
+
+El esquema indica una única entrada USB al ESP32. Debe comprobarse que 5V/VIN entregue tensión apropiada con alimentación USB y que la fuente soporte los picos de corriente del servo; una alimentación insuficiente puede provocar reinicios. No deben realizarse pruebas con mascotas ni cargas peligrosas. Las posiciones dibujadas representan conectividad funcional, no localización física de los pines.
 
 ### Diagramas de clases del objeto inteligente y Lambda
 
 #### Firmware: estructura actual
 
-`Main` representa el módulo `main.cpp`, no una clase real. La integración de red está implementada pero aún no se ha validado.
+`Main` representa el módulo `main.cpp`, no una clase real. La integración WiFi/MQTT/TLS con IoT Core fue probada posteriormente. Las firmas del diagrama deben contrastarse con la versión entregada del firmware.
 
 ```mermaid
 classDiagram
@@ -128,84 +136,61 @@ classDiagram
   ShadowManager --> ControlServo : solicita posicion
 ```
 
-#### Lambda: propuesta futura
+#### AWS Lambda: arquitectura implementada
 
-Los siguientes módulos son un diseño, no clases implementadas ni una obligación de usar un lenguaje específico.
+El código real del backend está en [`lambda/lambda_function.py`](../lambda/lambda_function.py) y utiliza ASK SDK for Python y Boto3. No se conservó el diagrama de clases propuesto de `SkillHandler`, `IntentRouter` y `ThingRepository`, porque eran **clases hipotéticas** y no representaban necesariamente la implementación desplegada.
 
 ```mermaid
-classDiagram
-  class SkillHandler {
-    +handle(request)
-  }
-  class IntentRouter {
-    +route(intent, userId)
-  }
-  class ThingLinkService {
-    +link(userId, thingName)
-    +unlink(userId)
-    +resolve(userId)
-    +validateThing(thingName)
-  }
-  class ThingRepository {
-    +get(userId)
-    +put(userId, thingName, linkedAt)
-    +delete(userId)
-  }
-  class ShadowService {
-    +getReported(thingName)
-    +setDesired(thingName, door)
-  }
-  class ResponseBuilder {
-    +build(message)
-  }
-  SkillHandler --> IntentRouter
-  SkillHandler --> ResponseBuilder
-  IntentRouter --> ThingLinkService
-  IntentRouter --> ShadowService
-  ThingLinkService --> ThingRepository
+flowchart TD
+  R[Solicitud de Alexa] --> H[Dispatcher del ASK SDK]
+  H --> V[VincularThingIntent]
+  H --> A[AbrirPuertaIntent]
+  H --> C[CerrarPuertaIntent]
+  H --> E[ConsultarEstadoIntent]
+  H --> S[ConsultarSensorIntent]
+  H --> D[DesvincularThingIntent]
+  H --> T[CambiarThingIntent]
+  V --> DB[(DynamoDB)]
+  D --> DB
+  T --> DB
+  A --> DB
+  C --> DB
+  E --> DB
+  S --> DB
+  A --> SH[(Device Shadow)]
+  C --> SH
+  E --> SH
+  S --> SH
 ```
 
-`SkillHandler` recibe la solicitud y delega su procesamiento; `IntentRouter` selecciona el caso de uso. `ThingLinkService` valida la existencia del Thing en el registro de IoT Core y gestiona los vínculos mediante `ThingRepository`, único módulo propuesto para leer y escribir DynamoDB. `ShadowService` consulta y modifica el Shadow del Thing resuelto. `ResponseBuilder` construye respuestas de Alexa en español, incluidos errores.
+La función `puerta_mascotas_alexa` utiliza variables de entorno `TABLE_NAME`, `THING_NAME`, `PAIRING_CODE` e `IOT_ENDPOINT`. El timeout se amplió a **7 segundos** durante las pruebas. En el código real debe verificarse la implementación exacta de validaciones y manejo de excepciones; aquí se documentan los resultados ensayados, no capacidades no probadas.
 
 ### Diagramas de secuencia
 
-Los siguientes flujos son propuestas futuras. El ESP32 publica el estado del sensor de forma independiente; la consulta de Alexa lee el último valor disponible y no solicita una medición instantánea al dispositivo.
+Los siguientes diagramas describen los flujos integrados comprobados. El ESP32 publica lecturas del sensor de forma independiente: una consulta de Alexa recupera el último valor disponible, sin solicitar una medición instantánea.
 
-#### Vinculación de un Thing
+#### Vinculación de un Thing mediante código
 
 ```mermaid
 sequenceDiagram
   actor U as Usuario
   participant A as Alexa
   participant L as Lambda
-  participant I as IoT Core registro
   participant D as DynamoDB
-  U->>A: Abre la skill y solicita vincular identificador
-  A->>L: LinkThingIntent, slot y userId
-  L->>L: Validar userId y formato del identificador
-  alt Identificador o usuario inválido
-    L-->>A: Solicitar datos válidos
-  else Datos válidos
-    L->>I: DescribeThing(thingName)
-    alt Thing existe
-      I-->>L: Datos del Thing
-      L->>D: Guardar vínculo userId y thingName
-      alt Escritura correcta
-        D-->>L: Confirmación
-        L-->>A: Vínculo registrado
-      else Error de persistencia
-        D-->>L: Error
-        L-->>A: No se pudo guardar
-      end
-    else No existe o error de consulta
-      I-->>L: No encontrado o error
-      L-->>A: Informar resultado y orientar
-    end
+  U->>A: Vincular dispositivo con código de cuatro dígitos
+  A->>L: VincularThingIntent, slot codigo y userId
+  L->>L: Comprobar código configurado y solicitud
+  alt Código aceptado
+    L->>D: Guardar userId y thingName
+    D-->>L: Resultado de escritura
+    L-->>A: Confirmar vinculación
+  else Código no aceptado
+    L-->>A: Informar error de vinculación
   end
   A-->>U: Respuesta en español
 ```
 
-El registro de un vínculo no requiere comunicarse con el ESP32: se verifica el Thing en IoT Core. La existencia no garantiza que el usuario sea su propietario.
+El sistema de prueba utilizó un código de cuatro dígitos, no el dictado del nombre completo del Thing. Se comprobó creación, eliminación y recreación de la asociación en DynamoDB. La verificación de pertenencia real del dispositivo y la rotación segura del código requerirían un esquema de autorización más fuerte para producción.
 
 #### Consulta del sensor
 
@@ -219,7 +204,7 @@ sequenceDiagram
   participant E as ESP32 y sensor IR de puerta
   E->>S: Publica reported.objectDetected
   U->>A: ¿Hay algo frente a la puerta?
-  A->>L: GetObjectDetectionIntent y userId
+  A->>L: ConsultarSensorIntent y userId
   L->>D: Buscar vínculo por userId
   alt Sin vínculo
     D-->>L: No encontrado
@@ -250,7 +235,7 @@ sequenceDiagram
   participant E as ESP32
   participant V as Servomotor
   U->>A: Abrir o cerrar puerta
-  A->>L: Intent y userId
+  A->>L: AbrirPuertaIntent o CerrarPuertaIntent y userId
   L->>D: Buscar vínculo
   alt Sin vínculo
     D-->>L: No encontrado
@@ -279,17 +264,22 @@ La respuesta no espera el movimiento físico. Si `desired` ya coincide con `repo
 
 ### Especificación del Shadow
 
-**Configuración inicial confirmada por el usuario:** el Shadow clásico de `puerta-mascotas-01` contenía la siguiente orden deseada. Posteriormente el usuario observó publicaciones del sensor; el estado actual completo debe consultarse en AWS:
+En la fase inicial el Shadow solo contenía `desired.door = "closed"`. En la fase final se observaron estados `desired` y `reported` sincronizados en apertura y cierre, y valores del sensor `true` y `false`. El siguiente documento es **ilustrativo** de un estado cerrado con sensor sin detección (los valores reales varían con la lectura física):
 
 ```json
 {
   "state": {
-    "desired": { "door": "closed" }
+    "desired": { "door": "closed" },
+    "reported": {
+      "door": "closed",
+      "servoAngle": 0,
+      "objectDetected": false
+    }
   }
 }
 ```
 
-El usuario confirma el funcionamiento local del sensor IR y observó publicaciones de sus cambios. `objectDetected` debe proceder de una lectura física válida. `reported.door` y `servoAngle` solo los publicará el firmware cuando haya solicitado realmente la posición; nunca se prellenarán manualmente. Un valor informado por software no confirma el ángulo físico. Se observó la recepción de `closed`, sin que ello confirme movimiento físico.
+Las capturas muestran también estados abiertos con `servoAngle = 180`, y un estado cerrado con `objectDetected = true`; esto demuestra que la detección del IR es independiente de la orden de puerta. El movimiento físico del servo fue confirmado visualmente por el integrante encargado del prototipo, no por un sensor de ángulo.
 
 | Atributo | Ubicación | Tipo | Valores válidos | Propósito |
 |---|---|---|---|---|
@@ -301,43 +291,33 @@ El usuario confirma el funcionamiento local del sensor IR y observó publicacion
 
 `desired` conserva el objetivo de control; `reported` conserva la última información publicada por el dispositivo. AWS genera `delta` a partir de sus diferencias: no es un tercer estado que se escriba manualmente. El sensor se consulta desde `reported` porque procede del entorno; el servo se solicita mediante `desired` para desacoplar la orden de la aplicación. No se propone `lastUpdate` propio hasta definir una fuente de tiempo confiable; los metadatos del Shadow podrán ayudar a evaluar antigüedad. Si falta un campo o está desactualizado según una política aún por definir, la skill debe indicar que el dato no está disponible o puede ser antiguo.
 
-Se prevé reportar cambios de presencia por evento y periódicamente como respaldo, y reportar inmediatamente una nueva orden aplicada; los intervalos y límites de antigüedad quedan por definir, justificar y verificar. Al reconectar, el ESP32 deberá consultar el Shadow completo y aplicar el `desired` pendiente, sin depender exclusivamente de haber recibido un `delta` durante la desconexión.
+El firmware documenta reportes por evento y periódicos de respaldo, con lectura del sensor cada 200 ms, límite de un reporte por segundo y respaldo cada 30 s; se observaron actualizaciones por cambio y periódicas. No se midieron la latencia real ni los límites de antigüedad. Se documentó una prueba manual en la que, tras una desconexión, el ESP32 recuperó una orden pendiente desde el Shadow y ejecutó el cierre. Este caso no valida exhaustivamente todas las situaciones de reconexión.
 
 ### Mecanismo de vinculación
 
-**Diseño futuro:** se propone usar directamente el `thingName` como identificador de vinculación. El nombre debe respetar el formato aceptado por IoT Core y ser recuperable de forma inequívoca del slot; la conversión de voz a identificador exacto necesita diseño y verificación. No se establece una transformación que pueda alterar guiones o números. Si Alexa no obtiene un identificador inequívoco se solicitará repetirlo o confirmarlo.
+La tabla utilizada es **`puerta_mascotas_usuarios`**, con `userId` (String) como clave de partición y `thingName` (String) como atributo de asociación. La vinculación se crea mediante el intent `VincularThingIntent` y un código de cuatro dígitos capturado en el slot `codigo` (`AMAZON.FOUR_DIGIT_NUMBER`). La variable `THING_NAME` identifica el dispositivo de demostración `puerta-mascotas-01`; el código de vinculación se configura en Lambda mediante `PAIRING_CODE`.
 
-Tabla propuesta `UserThingLinks`, un registro por usuario:
+Se comprobó en DynamoDB la creación del vínculo, la eliminación mediante `DesvincularThingIntent` y la vinculación posterior. `CambiarThingIntent` reconoció el caso de intento de cambio al mismo Thing ya vinculado; **no se probó** la sustitución efectiva por un segundo dispositivo. El `userId` se presenta oculto en las evidencias y no se almacena en documentos públicos.
 
-| Atributo | Tipo DynamoDB | Propósito |
+Este esquema es suficiente para el prototipo académico, pero un código de demostración no constituye un mecanismo de propiedad del dispositivo o autorización robusta en un despliegue real. La validación detallada del código y sus controles deben cotejarse con el archivo Python final.
+
+### Diseño y configuración de la Skill de Alexa
+
+Se configuró la Skill personalizada **Puerta Inteligente para Mascotas**, idioma **es-MX** y nombre de invocación **«puerta de mascotas»**. El modelo real exportado se conserva en [`alexa/modelo_interaccion_es-MX.json`](../alexa/modelo_interaccion_es-MX.json).
+
+| Intent personalizado | Función | Slot |
 |---|---|---|
-| `userId` | String, clave de partición | Identificador estable recibido en `context.System.user.userId`. |
-| `thingName` | String | Nombre del Thing asociado. |
-| `linkedAt` | String | Fecha y hora UTC ISO 8601 del registro o reemplazo. |
+| `VincularThingIntent` | Crear asociación de usuario y Thing | `codigo: AMAZON.FOUR_DIGIT_NUMBER` |
+| `AbrirPuertaIntent` | Solicitar `desired.door = "open"` | — |
+| `CerrarPuertaIntent` | Solicitar `desired.door = "closed"` | — |
+| `ConsultarEstadoIntent` | Consultar `reported.door` | — |
+| `ConsultarSensorIntent` | Consultar `reported.objectDetected` | — |
+| `DesvincularThingIntent` | Eliminar la asociación en DynamoDB | — |
+| `CambiarThingIntent` | Solicitar cambio de vinculación | `codigo: AMAZON.FOUR_DIGIT_NUMBER` |
 
-Para vincular, Lambda comprueba que la solicitud provenga de Alexa y contenga un `userId`, valida que el identificador no esté vacío y consulta la existencia mediante `DescribeThing`. Solo tras una respuesta positiva escribe el registro; errores de AWS no se interpretan como inexistencia. Para cambiar el vínculo, repite las validaciones antes de reemplazar el registro; si fallan, conserva el anterior. Para desvincular, elimina el registro del usuario y comunica el resultado. Ante una consulta o comando sin vínculo, indica cómo vincular el dispositivo. La identidad proviene de Alexa y no de un slot; la validación de solicitud y autorización se concretará en la implementación.
+El modelo también contiene `AMAZON.CancelIntent`, `AMAZON.HelpIntent`, `AMAZON.StopIntent` y `AMAZON.NavigateHomeIntent`.
 
-El `thingName` por sí solo no demuestra propiedad ni impide que otro usuario lo adivine; tampoco se garantiza exclusividad entre usuarios. Un código no predecible y un mecanismo de autorización son mejoras pendientes para un entorno real. Account Linking OAuth no es exigido por la guía.
-
-### Diseño de la skill de Alexa
-
-**Modelo propuesto, aún no configurado:** skill «Puerta Inteligente para Mascotas», invocación sugerida «puerta mascotas», idioma español; disponibilidad regional y validación del nombre quedan pendientes. Ejemplo de apertura de sesión: «Alexa, abre puerta mascotas». Las demás frases se pronuncian dentro de la skill.
-
-| Intent | Función | Slot | Ejemplo |
-|---|---|---|---|
-| `OpenDoorIntent` | Solicitar apertura. | — | «abre la puerta» |
-| `CloseDoorIntent` | Solicitar cierre. | — | «cierra la puerta» |
-| `GetDoorStateIntent` | Consultar la última posición ordenada reportada. | — | «¿la puerta está abierta?» |
-| `GetObjectDetectionIntent` | Consultar la última detección reportada. | — | «¿hay algo frente a la puerta?» |
-| `LinkThingIntent` | Registrar vínculo. | `thingIdentifier` | «vincula mi puerta con el dispositivo puerta mascotas cero uno» |
-| `ChangeThingLinkIntent` | Validar y reemplazar vínculo. | `thingIdentifier` | «cambia mi dispositivo a patio dos» |
-| `UnlinkThingIntent` | Eliminar vínculo. | — | «desvincula mi dispositivo» |
-| `AMAZON.HelpIntent` | Explicar acciones disponibles. | — | «ayuda» |
-| `AMAZON.CancelIntent` | Cancelar la interacción. | — | «cancela» |
-| `AMAZON.StopIntent` | Terminar la sesión. | — | «para» |
-| `AMAZON.FallbackIntent` | Gestionar una solicitud no reconocida. | — | Sin frase personalizada propuesta. |
-
-`thingIdentifier` representa el `thingName`. Su tipo de slot y estrategia de reconocimiento se definirán al implementar el modelo; las frases exactas y el reconocimiento de identificadores deberán verificarse en Alexa Developer Console. La skill debe solicitar el dato si falta y expresar que la apertura o cierre es una solicitud; la consulta de estado describe la última orden reportada, no una medición física.
+Frases verificadas en el simulador: «dile a puerta de mascotas que abra la puerta», «... que cierre la puerta», «... que consulte el estado de la puerta», «... que consulte el sensor» y comandos de vinculación, desvinculación y cambio. Se modificaron frases de ejemplo para resolver confusiones iniciales de reconocimiento de intents.
 
 ## 3. Desarrollo e Implementación
 
@@ -347,11 +327,11 @@ Se adoptó como configuración de trabajo el entorno `esp32doit-devkit-v1`, con 
 
 ### Estructura del código y fragmentos clave
 
-Se implementaron [SensorIR](../include/SensorIR.h) ([implementación](../src/SensorIR.cpp)) y [ControlServo](../include/ControlServo.h) ([implementación](../src/ControlServo.cpp)). `SensorIR` configura una entrada digital y su polaridad en el constructor; `iniciar()` configura el pin y realiza una primera lectura, `leer()` actualiza y devuelve la detección y `ultimoEstado()` consulta la última lectura. El programa selecciona GPIO 27 y polaridad activa en `LOW`, modificable a `HIGH` según el módulo. La lectura solo se actualiza al iniciar o al llamar a `leer()`.
+Se implementaron [SensorIR](../include/SensorIR.h) ([implementación](../src/SensorIR.cpp)) y [ControlServo](../include/ControlServo.h) ([implementación](../src/ControlServo.cpp)). `SensorIR` configura una entrada digital y su polaridad en el constructor; `iniciar()` configura el pin y realiza una primera lectura, `leer()` actualiza y devuelve la detección y `ultimoEstado()` consulta la última lectura. **Según el diagrama de conexiones actualizado, la salida OUT del sensor está conectada a GPIO18**. Una versión anterior de la documentación señalaba GPIO27; por ello, debe comprobarse que las constantes de pines del firmware entregado coincidan con el diagrama final. La polaridad de detección también depende de la configuración del módulo. La lectura solo se actualiza al iniciar o al llamar a `leer()`.
 
-`ControlServo` recibe GPIO 18 desde el programa principal y ofrece `abrir()`, `cerrar()`, `posicionSolicitada()` y `estaAbierta()`. Su inicialización se aplaza hasta recibir una orden válida y estar habilitado el movimiento; recibe la posición inicial solicitada. El estado representa exclusivamente la orden enviada: no hay retroalimentación física. La inicialización y el comportamiento de la biblioteca al adjuntar el servo deben verificarse con el mecanismo desacoplado.
+**Según el esquema actualizado, el SG90 recibe la señal de control desde GPIO27**. La documentación anterior mencionaba GPIO18; antes de entregar, corresponde confirmar el pin configurado en el código y que refleje el cableado actualizado. `ControlServo` ofrece `abrir()`, `cerrar()`, `posicionSolicitada()` y `estaAbierta()`. Su inicialización se aplaza hasta recibir una orden válida y estar habilitado el movimiento; recibe la posición inicial solicitada. El estado representa exclusivamente la orden enviada: no hay retroalimentación física. La inicialización y el comportamiento de la biblioteca al adjuntar el servo deben verificarse con el mecanismo desacoplado.
 
-La biblioteca `madhephaestus/ESP32Servo@3.0.5` se declara en [platformio.ini](../platformio.ini). El usuario confirmó el funcionamiento del firmware local de la Fase 2; la versión modificada de Fase 4 no se ha validado. [main.cpp](../src/main.cpp) integra las clases y [ShadowManager](../src/ShadowManager.cpp); el monitor serial a 115200 proporciona diagnóstico, sin comandos locales de movimiento.
+La biblioteca `madhephaestus/ESP32Servo@3.0.5` se declara en [platformio.ini](../platformio.ini). Se probó el firmware local de la Fase 2 y posteriormente se comprobó la integración con AWS IoT Core y Alexa. [main.cpp](../src/main.cpp) integra las clases y [ShadowManager](../src/ShadowManager.cpp); el monitor serial a 115200 proporciona diagnóstico, sin comandos locales de movimiento.
 
 #### Firmware MQTT y sincronización
 
@@ -377,9 +357,9 @@ Se identificó un defecto concreto en la publicación: `publish(topic, salida, n
 
 Se cambió la llamada a la sobrecarga explícita de bytes, longitud y `retained = false`. Con `THING_NAME = puerta-mascotas-01`, el tópico construido es `$aws/things/puerta-mascotas-01/shadow/update`. El JSON contiene `state.reported.objectDetected` booleano y `clientToken`; `door` y `servoAngle` solo se incluyen si existe una posición solicitada. El buffer MQTT de 6656 bytes es amplio para este reporte, cuyo buffer serializado es de 256 bytes; no se ha medido el uso real de memoria. El resultado booleano de `publish` se registra como envío local o fallo y solo el `update/accepted` con el token propio confirma aceptación. Los reportes no confirmados se reintentan de forma controlada, con el último estado disponible.
 
-El cliente ESP32 usa `THING_NAME` como client ID, cuyo ejemplo es `puerta-mascotas-01`; el usuario indicó que MQTT.fx usa `mqttfx-puerta-mascotas-01`. Son distintos si la configuración local conserva ese Thing; no se inspeccionó el archivo local. El firmware solicita un `get` por conexión, lo reintenta si no recibe respuesta y puede solicitar otro si llega un delta durante la sincronización; múltiples `get/accepted` no demuestran por sí solos consultas duplicadas en una misma conexión. `mqtt.loop()` se ejecuta en cada iteración conectada, aunque TCP/TLS y lecturas MQTT pueden bloquear temporalmente. Se mantienen TLS, certificados, política, intervalos y movimiento deshabilitado en la plantilla. La corrección y la estabilidad aún esperan pruebas manuales.
+El cliente ESP32 usa `THING_NAME` como client ID, cuyo ejemplo es `puerta-mascotas-01`; el usuario indicó que MQTT.fx usa `mqttfx-puerta-mascotas-01`. Son distintos si la configuración local conserva ese Thing; no se inspeccionó el archivo local. El firmware solicita un `get` por conexión, lo reintenta si no recibe respuesta y puede solicitar otro si llega un delta durante la sincronización; múltiples `get/accepted` no demuestran por sí solos consultas duplicadas en una misma conexión. `mqtt.loop()` se ejecuta en cada iteración conectada, aunque TCP/TLS y lecturas MQTT pueden bloquear temporalmente. Se mantienen TLS, certificados, política, intervalos y movimiento deshabilitado en la plantilla. Posteriormente se comprobó la recepción y publicación de estados del Shadow; la estabilidad a largo plazo continúa sin cuantificación.
 
-`ENABLE_DOOR_MOVEMENT` es `false` en la plantilla. Mientras esté deshabilitado, el firmware reconoce pero no ejecuta órdenes ni publica una posición ficticia. Habilitarlo deliberadamente permite aplicar `desired`, incluso uno antiguo pendiente tras reconectar. La solución de laboratorio no distingue una orden obsoleta de una reciente y no es segura para operar cerca de mascotas; tampoco se garantiza la posición física. El usuario confirmó comunicación y aceptación de reportes; la estabilidad continua y los cambios posteriores de diagnóstico aún están pendientes de validación.
+`ENABLE_DOOR_MOVEMENT` es `false` en la plantilla de seguridad. Para las pruebas finales con SG90 se cambió a `true` y se cargó el firmware. Habilitarlo permite aplicar `desired`, incluso una orden antigua pendiente tras reconectar; el prototipo no es seguro para operar desatendido cerca de mascotas. Se confirmó movimiento físico mediante observación, no mediante realimentación de posición. La estabilidad continua y los escenarios de desconexión siguen pendientes de un estudio exhaustivo.
 
 #### Diagnóstico de reconexiones
 
@@ -393,15 +373,15 @@ Quedan pendientes la verificación del modelo y polaridad del sensor, su aliment
 
 ### Configuración de AWS
 
-AWS IoT Core es el servicio utilizado para registrar el dispositivo y mantener el Shadow clásico; la autenticación X.509 y el intercambio MQTT sobre TLS con el ESP32 están previstos. Según confirmación del usuario, la región es `us-east-2` (Ohio), el Thing es `puerta-mascotas-01` y el Shadow clásico contiene `desired.door = closed`, sin estado reportado por el ESP32. El client ID propuesto para el firmware es `puerta-mascotas-01`; este dispositivo inicial no limita el diseño multiusuario a un único Thing.
+La integración se desplegó en **`us-east-2` (Ohio)**. En AWS IoT Core se registró el Thing **`puerta-mascotas-01`**, con Shadow clásico y certificado X.509 activo y asociado a la política **`PuertaMascotasIoTPolicy`**. Se utilizó el endpoint ATS de la cuenta y MQTT/TLS en el puerto **8883**.
 
-El usuario confirma que generó y descargó un certificado X.509, que está activo y asociado al Thing, y que la política `PuertaMascotasIoTPolicy` está asociada al certificado. La política real tiene permisos amplios por indicación del docente para el entorno académico; no se ha proporcionado su documento, por lo que no se atribuyen acciones o recursos concretos. Los permisos amplios pueden permitir acceso indebido a clientes o tópicos ajenos y ampliar el impacto de una clave comprometida.
+Durante las pruebas se corrigieron los ARN de la política IoT y se comprobó su **versión 3 activa**, con permisos específicos `iot:Connect`, `iot:Publish`, `iot:Subscribe` e `iot:Receive` para los clientes y tópicos utilizados. La [plantilla de mínimo privilegio](../aws/iot-policy.example.json) es **un ejemplo**, no una exportación exacta de esa política desplegada. No se incluyen certificados privados ni contraseñas en el repositorio.
 
-Para producción se propone mínimo privilegio mediante la [política de ejemplo](../aws/iot-policy.example.json): `iot:Connect` al client ID exacto, `iot:Publish` solo a `get` y `update`, `iot:Subscribe` a los cinco filtros de respuesta y `iot:Receive` a sus tópicos correspondientes, usando ARN `client`, `topicfilter` y `topic`. La plantilla no representa ni modifica la política académica real. Debe adaptarse a la región y cuenta antes de su uso. El permiso de publicar en `update` no restringe campos JSON; el firmware debe limitarse a `reported`. La [guía de AWS](../aws/README.md) detalla los recursos y tópicos.
+La tabla DynamoDB **`puerta_mascotas_usuarios`** almacena `userId` y `thingName`. AWS Lambda **`puerta_mascotas_alexa`** utiliza Boto3, las variables `TABLE_NAME`, `THING_NAME`, `PAIRING_CODE` e `IOT_ENDPOINT`, y el rol **`PuertaMascotasLambdaRole`** con permisos para sus operaciones. Se utilizó CloudWatch para diagnosticar problemas. El tiempo de espera de la función se incrementó a **7 s**. El endpoint incorrecto y algunos conflictos del modelo de voz se corrigieron antes de las pruebas finales.
 
-El usuario localizó el endpoint de datos ATS, cuyo sufijo es `-ats.iot.us-east-2.amazonaws.com`; se usa MQTT sobre TLS en el puerto `8883`. El certificado y la clave privada deben conservarse fuera del repositorio. El usuario confirmó una conexión y consulta del Shadow, junto con errores intermitentes; falta validar la estabilidad y los cambios posteriores. Las configuraciones de Lambda, DynamoDB y el rol IAM siguen pendientes.
+La arquitectura completa, recursos y consideraciones de seguridad están detallados en [`aws/README.md`](../aws/README.md), [`lambda/README.md`](../lambda/README.md) y [`alexa/README.md`](../alexa/README.md).
 
-#### Tópicos y sincronización previstos
+#### Tópicos y sincronización utilizados
 
 Para `puerta-mascotas-01`, el prefijo es `$aws/things/puerta-mascotas-01/shadow/`:
 
@@ -415,11 +395,11 @@ Para `puerta-mascotas-01`, el prefijo es `$aws/things/puerta-mascotas-01/shadow/
 | `update/accepted` | Suscribirse y recibir | Recibir aceptación de una actualización. |
 | `update/rejected` | Suscribirse y recibir | Recibir errores de actualización. |
 
-En la Fase 4 el usuario observó conexión, consulta, recepción de `closed` y aceptación por AWS de reportes del sensor, además de errores iniciales y reconexiones ocasionales. Los nuevos registros de diagnóstico aún no se han validado. La aceptación del Shadow no confirma un movimiento físico.
+En la Fase 4 se comprobó conexión, consulta del Shadow, recepción de órdenes y aceptación de reportes del sensor. En las pruebas finales se observaron estados `open` y `closed` sincronizados y se confirmó visualmente el giro del SG90. La aceptación del Shadow, por sí sola, no mide el movimiento físico.
 
 ### Configuración de Alexa
 
-Pendiente: modelo de interacción y vinculación con Lambda.
+La Skill se configuró y probó con **es-MX**, nombre de invocación **«puerta de mascotas»**, siete intents personalizados y dos slots `codigo` (`AMAZON.FOUR_DIGIT_NUMBER`). Se enlazó la Skill con AWS Lambda `puerta_mascotas_alexa` y se verificaron sus respuestas mediante Alexa Developer Console. El modelo exportado está en [`alexa/modelo_interaccion_es-MX.json`](../alexa/modelo_interaccion_es-MX.json).
 
 ## 4. Pruebas y Validaciones
 
@@ -427,13 +407,13 @@ Pendiente: modelo de interacción y vinculación con Lambda.
 
 Según la confirmación del usuario, las pruebas físicas locales fueron satisfactorias: el ESP32 ejecuta el firmware desarrollado con PlatformIO, el sensor IR funciona físicamente y el servomotor responde a los comandos locales de apertura y cierre. Las clases `SensorIR` y `ControlServo` están integradas en el programa principal.
 
-Esta validación de Fase 2 se limitó al hardware y a los comandos locales. Posteriormente, según el usuario, el ESP32 se conectó a AWS, consultó el Shadow, recibió `closed` y AWS confirmó los reportes del IR; también se habían observado errores iniciales `-4` y reconexiones ocasionales. No se ha confirmado la integración con Alexa ni se proporcionaron mediciones de latencia, exactitud, ciclos o tensiones.
+Esta validación de Fase 2 se limitó al hardware y a los comandos locales. Posteriormente, según el usuario, el ESP32 se conectó a AWS, consultó el Shadow, recibió `closed` y AWS confirmó los reportes del IR; también se habían observado errores iniciales `-4` y reconexiones ocasionales. Posteriormente se confirmó la integración con Alexa y el movimiento físico al enviar órdenes desde la Skill; no se aportaron mediciones de latencia, exactitud, ciclos o tensiones.
 
 ### Comunicación y operación observada — Fase 4
 
-El usuario informa una prueba manual de funcionamiento continuo durante **10 minutos**. Durante el período declarado, observó el ESP32 conectado a WiFi y AWS IoT Core mediante MQTT/TLS, lecturas del IR alternando entre detectado y no detectado, publicaciones del estado al Device Shadow y confirmaciones repetidas `Reporte propio aceptado por Shadow`. También confirmó que MQTT.fx permite consultar `reported.objectDetected`. El movimiento del servomotor permaneció deshabilitado por configuración.
+El usuario informa una prueba manual de funcionamiento continuo durante **10 minutos**. Durante el período declarado, observó el ESP32 conectado a WiFi y AWS IoT Core mediante MQTT/TLS, lecturas del IR alternando entre detectado y no detectado, publicaciones del estado al Device Shadow y confirmaciones repetidas `Reporte propio aceptado por Shadow`. También confirmó que MQTT.fx permite consultar `reported.objectDetected`. Durante **esta prueba inicial de comunicación** el movimiento del servomotor estaba deshabilitado; en la prueba posterior de extremo a extremo se habilitó y se confirmó su movimiento físico.
 
-El resultado es **satisfactorio para la comunicación del sensor y la operación observada durante el período declarado**, según la información proporcionada. En el fragmento serial compartido no aparecen errores MQTT ni reinicios; no se dispone del registro íntegro con marcas temporales para demostrar ausencia absoluta de desconexiones durante todo el intervalo. No se proporcionaron mediciones de latencia, exactitud ni consumo. La prueba no valida el control físico del servomotor desde AWS: la aceptación de un reporte no confirma movimiento ni posición física.
+El resultado es **satisfactorio para la comunicación del sensor y la operación observada durante el período declarado**, según la información proporcionada. En el fragmento serial compartido no aparecen errores MQTT ni reinicios; no se dispone del registro íntegro con marcas temporales para demostrar ausencia absoluta de desconexiones durante todo el intervalo. No se proporcionaron mediciones de latencia, exactitud ni consumo. Esta prueba inicial no validaba por sí misma el movimiento físico; la prueba posterior de apertura/cierre desde Alexa sí incluyó confirmación visual del SG90.
 
 La validación posterior del actuador y de la recuperación tras desconexión se documenta por separado a continuación. Una orden persistida puede ejecutarse si se habilita el movimiento.
 
@@ -470,20 +450,79 @@ El resultado es **satisfactorio para la recuperación de una orden pendiente des
 
 La Fase 4 queda **funcionalmente validada** dentro del alcance de las pruebas informadas. Se mantienen como limitaciones las desconexiones MQTT intermitentes observadas anteriormente, la ausencia de retroalimentación física y el riesgo de ejecutar órdenes antiguas al reconectar. Estos resultados no demuestran que el sistema sea seguro para operar desatendido o cerca de mascotas.
 
-Permanece pendiente completar el plan y las evidencias de RF1–RF9, las frases de la skill y los atributos no funcionales medibles. La prueba de reconexión confirma el caso descrito, pero no establece tiempos de recuperación ni demuestra por sí sola el cumplimiento integral de los requisitos.
+Las pruebas de Alexa y DynamoDB añadidas en la fase final cubren RF4–RF8 y parte de RF9. Permanecen pendientes la prueba de cambio hacia un segundo Thing, la verificación exhaustiva de permisos, las métricas no funcionales y la validación de seguridad para uso real. La prueba de reconexión no establece tiempos de recuperación.
+
+### Pruebas finales de Alexa, DynamoDB y Device Shadow — RF4 a RF9
+
+| Prueba | Procedimiento | Resultado observado | Evidencia |
+|---|---|---|---|
+| Consultar IR sin objeto | Consultar sensor en el simulador | Alexa indicó ausencia de detección | [Captura](../evidencias/03-alexa-sensor-sin-deteccion.png) |
+| Consultar IR con objeto | Consultar sensor tras detectar objeto | Alexa indicó detección | [Captura](../evidencias/04-alexa-sensor-con-deteccion.png) |
+| Cerrar la puerta | Orden `closed` por MQTT o Alexa | `desired` y `reported` en `closed`, ángulo reportado 0° | [Shadow](../evidencias/05-shadow-cerrado.png) |
+| Abrir la puerta | Orden `open` por MQTT o Alexa | `desired` y `reported` en `open`, ángulo reportado 180° | [Shadow](../evidencias/06-shadow-abierto.png) |
+| Lectura del IR en AWS | Cambiar condición frente al sensor | `reported.objectDetected = true` | [Shadow](../evidencias/07-shadow-sensor-detectado.png) |
+| Vincular usuario | Intent de vinculación y consulta de tabla | Registro `userId` → `thingName` comprobado | [DynamoDB](../evidencias/08-dynamodb-vinculacion.png) |
+| Backend de la Skill | Invocaciones en Alexa Developer Console | Respuestas generadas por Lambda | [Lambda](../evidencias/09-lambda-funcion.png) |
+| Política IoT | Revisión de política desplegada | Permisos MQTT y versión activa comprobados | [Política](../evidencias/10-politica-iot.png) |
+
+Se comprobaron asimismo el intent de consulta del estado de la puerta, la desvinculación y nueva vinculación, y la respuesta al intentar cambiar al mismo dispositivo vinculado. No se probó el cambio efectivo a un segundo Thing. El integrante encargado del hardware confirmó el **movimiento físico** del servo durante las órdenes de apertura y cierre desde Alexa, aunque no se documentó con un sensor de posición ni con una medición instrumental.
 
 ## 5. Resultados
 
-Pendiente de mediciones y análisis.
+La integración funcional permitió conectar el control por voz con el prototipo físico a través de los servicios AWS. Las evidencias muestran tanto estados `desired/reported` sincronizados como variaciones independientes de la lectura de presencia.
+
+| Aspecto | Resultado | Alcance de la conclusión |
+|---|---|---|
+| Sensor IR | Alternó entre detección y no detección; Alexa consultó ambos casos | No identifica la especie ni protege contra atrapamientos |
+| MQTT/TLS y Shadow | El ESP32 consultó el estado y publicó lecturas y órdenes aplicadas | La sincronización lógica no mide ángulo físico |
+| Servo SG90 | Movimiento de apertura y cierre confirmado por el integrante de hardware | Sin retroalimentación de posición ni estudio de fuerza |
+| Alexa y Lambda | Se probaron siete intents; el cambio al mismo Thing fue reconocido | No se validó un segundo Thing |
+| DynamoDB | Vinculación, consulta, eliminación y nueva vinculación comprobadas | El código de prueba no es autenticación de propiedad fuerte |
+| Recuperación tras desconexión | Se informó la ejecución de un cierre pendiente al volver a conectar | No se midieron tiempos ni tasas de éxito |
+
+No se dispone de una campaña reproducible de **latencia, exactitud, disponibilidad, consumo eléctrico o tasa de fallos**. Los parámetros temporales del firmware son configuraciones de software y no sustituyen mediciones físicas o de red.
 
 ## 6. Conclusiones
 
-Pendiente.
+1. Se implementó una puerta inteligente experimental controlable por Alexa, con backend en AWS Lambda, vinculación persistente en DynamoDB y sincronización de estados mediante AWS IoT Core Device Shadow.
+2. La separación entre `desired` y `reported` permitió distinguir una **orden solicitada** del último estado **informado por el ESP32**. Los registros del Shadow y la confirmación visual del SG90 se complementan, pero no equivalen a una medición de posición.
+3. Se verificó que el sensor IR transmite estados de presencia consultables desde Alexa, independientemente de si la puerta está abierta o cerrada.
+4. La colaboración quedó respaldada por código, modelo de interacción, documentación técnica y capturas vinculadas desde el repositorio.
+5. El prototipo no constituye un producto seguro para mascotas: carece de protección antiatrapamiento, realimentación del actuador y pruebas sistemáticas de disponibilidad y resistencia del montaje.
 
 ## 7. Recomendaciones
 
-Pendiente.
+- **Comprobar antes de entregar** que el firmware coincida con el **diagrama actualizado**: sensor IR en GPIO18 y servo SG90 en GPIO27. La descripción de pines del informe anterior correspondía a una versión previa; si el código aún usa las asignaciones anteriores, corregirlo y volver a probar el circuito antes de afirmar correspondencia entre código y cableado.
+- Incorporar una fotografía propia del montaje final y, si es posible, una demostración breve del movimiento físico sin mascotas ni obstáculos.
+- Comprobar la capacidad de la fuente USB y los picos de corriente del SG90; considerar alimentación apropiada para el servo, con masa común, si el montaje real no es estable.
+- Mantener certificados, claves privadas, contraseñas WiFi y valores de usuario fuera del repositorio. El `userId` se oculta en las capturas públicas.
+- Para una versión de uso real, incorporar sensor de posición, detección antiatrapamiento, límites mecánicos y criterios de seguridad.
+- Medir tiempos reales de reconocimiento de Alexa, procesamiento de Lambda, entrega MQTT, movimiento y recuperación tras desconexión; registrar ensayos repetidos y sus condiciones.
+- Probar un segundo Thing antes de afirmar que el cambio de dispositivo está totalmente implementado.
 
 ## 8. Anexos
 
-Pendiente: diagramas, fotografías y evidencias pertinentes.
+### A. Evidencias de Alexa y AWS
+
+- [Consulta IR sin detección](../evidencias/03-alexa-sensor-sin-deteccion.png)
+- [Consulta IR con detección](../evidencias/04-alexa-sensor-con-deteccion.png)
+- [Device Shadow cerrado](../evidencias/05-shadow-cerrado.png)
+- [Device Shadow abierto](../evidencias/06-shadow-abierto.png)
+- [Device Shadow con IR detectado](../evidencias/07-shadow-sensor-detectado.png)
+- [Registro de vínculo DynamoDB](../evidencias/08-dynamodb-vinculacion.png)
+- [Función AWS Lambda](../evidencias/09-lambda-funcion.png)
+- [Política IoT](../evidencias/10-politica-iot.png)
+- [Diagrama funcional de conexiones](../evidencias/11-diagrama-conexiones.png) **(incorporar al repositorio)**
+
+### B. Código y configuración
+
+- [Código ESP32](../src/main.cpp) y [ShadowManager](../src/ShadowManager.cpp)
+- [Sensor IR](../src/SensorIR.cpp) y [ControlServo](../src/ControlServo.cpp)
+- [AWS Lambda](../lambda/lambda_function.py) y [documentación](../lambda/README.md)
+- [Modelo de interacción es-MX](../alexa/modelo_interaccion_es-MX.json)
+- [Infraestructura AWS](../aws/README.md) y [política de ejemplo](../aws/iot-policy.example.json)
+- [Índice de evidencias](../evidencias/README.md)
+
+### C. Consideraciones de entrega
+
+El historial de commits y los Pull Requests permiten identificar contribuciones individuales. Antes de integrar la rama de documentación, revisar privacidad de capturas, correspondencia con el firmware y coherencia de las referencias. No publicar secretos.

@@ -1,0 +1,128 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "puerta de mascotas",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AbrirPuertaIntent",
+                    "slots": [],
+                    "samples": [
+                        "abrir",
+                        "abra la puerta de mi mascota",
+                        "abra la puerta de mascotas",
+                        "abra la puerta",
+                        "abre la puerta para mi mascota",
+                        "abre la puertita",
+                        "abre la puerta de mi mascota",
+                        "quiero abrir la puerta",
+                        "abrir la puerta",
+                        "abre la puerta"
+                    ]
+                },
+                {
+                    "name": "CerrarPuertaIntent",
+                    "slots": [],
+                    "samples": [
+                        "cierra",
+                        "cierre la puerta de mascotas",
+                        "cierre la puerta",
+                        "cierra la puerta para mi mascota",
+                        "cierra la puertita",
+                        "cierra la puerta de mi mascota",
+                        "quiero cerrar la puerta",
+                        "cerrar la puerta",
+                        "cierra la puerta"
+                    ]
+                },
+                {
+                    "name": "ConsultarEstadoIntent",
+                    "slots": [],
+                    "samples": [
+                        "el servomotor está en posición abierta",
+                        "cuál es el estado del servomotor",
+                        "qué posición tiene la puerta",
+                        "en qué posición está la puerta",
+                        "consulta el estado de la puerta",
+                        "cuál es el estado de la puerta"
+                    ]
+                },
+                {
+                    "name": "ConsultarSensorIntent",
+                    "slots": [],
+                    "samples": [
+                        "cuál es la lectura del sensor",
+                        "revisa si el sensor detecta la puerta",
+                        "qué indica el sensor infrarrojo",
+                        "el sensor detecta la puerta cerrada",
+                        "consulta el sensor infrarrojo",
+                        "qué detecta el sensor"
+                    ]
+                },
+                {
+                    "name": "VincularThingIntent",
+                    "slots": [
+                        {
+                            "name": "codigo",
+                            "type": "AMAZON.FOUR_DIGIT_NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "conecta mi puerta con el código {codigo}",
+                        "quiero vincular mi puerta con el código {codigo}",
+                        "asocia mi dispositivo con el código {codigo}",
+                        "registra mi puerta con el código {codigo}",
+                        "vincula mi puerta con el código {codigo}"
+                    ]
+                },
+                {
+                    "name": "CambiarThingIntent",
+                    "slots": [
+                        {
+                            "name": "codigo",
+                            "type": "AMAZON.FOUR_DIGIT_NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "quiero cambiar de dispositivo con el codigo {codigo}",
+                        "cambie mi puerta con el codigo {codigo}",
+                        "cambia mi dispositivo con el codigo {codigo}",
+                        "actualiza mi dispositivo al codigo {codigo}",
+                        "selecciona otra puerta con el codigo {codigo}",
+                        "quiero cambiar mi puerta al código {codigo}",
+                        "reemplaza mi dispositivo por el código {codigo}",
+                        "cambia mi puerta al código {codigo}"
+                    ]
+                },
+                {
+                    "name": "DesvincularThingIntent",
+                    "slots": [],
+                    "samples": [
+                        "borra la vinculación de mi dispositivo",
+                        "desconecta mi puerta inteligente",
+                        "quita la vinculación de mi puerta",
+                        "elimina mi dispositivo",
+                        "quiero desvincular mi puerta",
+                        "desvincula mi puerta"
+                    ]
+                }
+            ],
+            "types": []
+        }
+    }
+}
