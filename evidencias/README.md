@@ -87,3 +87,17 @@ Las imágenes deben mostrar solamente la información necesaria para demostrar l
 Estas evidencias respaldan las secciones de implementación, pruebas y resultados del archivo `../docs/informe.md`.
 
 Los resultados registrados corresponden a las pruebas efectivamente realizadas y no implican mediciones sistemáticas de latencia, disponibilidad o estabilidad.
+
+## 10. Diagrama de conexiones del circuito
+
+![Diagrama de conexiones del circuito](11-diagrama-conexiones.png)
+
+**Figura:** Esquema funcional de conexiones entre el ESP32 DOIT DevKit V1, el sensor infrarrojo digital y el servomotor SG90.
+
+El sensor infrarrojo utiliza el GPIO18 como entrada digital y recibe alimentación de 3.3 V.
+
+El servomotor SG90 utiliza el GPIO27 como señal de control y recibe alimentación desde el pin 5V/VIN del ESP32.
+
+Todos los componentes comparten una referencia de tierra común (GND).
+
+El esquema representa las conexiones funcionales del circuito y no la distribución física de los pines en la placa.
