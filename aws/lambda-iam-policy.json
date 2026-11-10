@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AccesoDynamoDB",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem"
+            ],
+            "Resource": "arn:aws:dynamodb:us-east-2:243809381986:table/puerta_mascotas_usuarios"
+        },
+        {
+            "Sid": "AccesoIoTCore",
+            "Effect": "Allow",
+            "Action": [
+                "iot:DescribeThing",
+                "iot:GetThingShadow",
+                "iot:UpdateThingShadow"
+            ],
+            "Resource": "arn:aws:iot:us-east-2:243809381986:thing/puerta-mascotas-01"
+        }
+    ]
+}
